@@ -8,6 +8,8 @@ contract('Flight Surety Tests', async (accounts) => {
   before('setup contract', async () => {
     config = await Test.Config(accounts);
     await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
+    //let result = await flightSuretyApp.fundAirline(firstAirline, {from:firstAirline, value: (new BigNumber(10)).pow(18)});
+    //  flightSuretyApp.registerAirline("FirstAirline", {from:firstAirline});
   });
 
   /****************************************************************************************/
@@ -19,6 +21,13 @@ contract('Flight Surety Tests', async (accounts) => {
     // Get operating status
     let status = await config.flightSuretyData.isOperational.call();
     assert.equal(status, true, "Incorrect initial operating status value");
+
+  });
+
+  it(`(airlines) First airline is registered when contract is deployed`, async function () {
+
+    let status = await config.flightSuretyData.isAirline.call(config.firstAirline);
+    assert.equal(status, true, "Incorrect initial status: First airline is not registered");
 
   });
 
@@ -89,6 +98,30 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
 
   });
+
+  it('(user) can buy an insurance', async () => {
+
+    // ARRANGE
+    let fee = await config.flightSuretyApp.REGISTRATION_FEE.call();
+    let reverted = false;
+
+    // ACT
+    try {
+        await config.flightSuretyApp.buyInsurance ( config.firstAirline, "TESTFLIGHT", 
+        1111, {from: config.owner, value: fee});
+    }
+    catch(e) {
+        reverted = true;
+        console.log("error, cannot buy insurance"); 
+    }
+
+    // ASSERT
+    assert.equal (reverted , false,  "Error while buying insurance");
+
+  });
+
+     let gas = await web3.eth.getGasPrice()
+     let fee = tx.receipt.gasUsed * gas 
   
 
 });

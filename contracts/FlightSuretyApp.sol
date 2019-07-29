@@ -12,7 +12,7 @@ import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 contract FlightSuretyApp {
     // app logic and oracles code
     using SafeMath for uint256; // Allow SafeMath functions to be called for all uint256 types (similar to "prototype" in Javascript)
-
+    
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
@@ -24,7 +24,6 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
-    uint256 insurancePrice = 1 ether; //Beta version, to be improved
 
     address private contractOwner;          // Account used to deploy contract
 
@@ -76,13 +75,12 @@ contract FlightSuretyApp {
     */
     constructor
                                 (
-                                address dataContract
+                                    address dataContract
                                 ) 
                                 public 
     {
         contractOwner = msg.sender;
-        flightSuretyData = FlightSuretyData(dataContract);
-
+        flightSuretyData =  FlightSuretyData(dataContract);
     }
 
     /********************************************************************************************/
@@ -112,6 +110,7 @@ contract FlightSuretyApp {
                                 string airline
                             )
                             external
+                            requireIsOperational
                             returns(bool success, uint256 votes)
     {
         return flightSuretyData.registerAirline(msg.sender, airline);
@@ -148,16 +147,11 @@ contract FlightSuretyApp {
         // Passengers with insurance must be paid
         if (statusCode == STATUS_CODE_LATE_AIRLINE) {
             emit FlightDelayed(airline,  flight,timestamp);
-            flightSuretyData.creditInsurees(getFlightKey ( airline, flight, timestamp ) , insurancePrice);
+            flightSuretyData.creditInsurees(getFlightKey ( airline, flight, timestamp ) );
         }
     }
 
 
-
-
-
-
-/*
      // Query the status of any flight
     function viewFlightStatus
                             (
@@ -168,18 +162,11 @@ contract FlightSuretyApp {
                             view
                             returns(uint8)
     {
-            require(flights[flightKey].hasStatus, "Flight status not available");
+            require(flights[flightKey].isRegistered, "Flight status not available");
 
             bytes32 flightKey = keccak256(abi.encodePacked(flight, timestamp));
-            return flights[flightKey].status;
+            return flights[flightKey].statusCode;
     }
-*/
-
-
-
-
-
-
 
     // Generate a request for oracles to fetch flight information
     // Called by the UI button on the client DApp
@@ -187,9 +174,10 @@ contract FlightSuretyApp {
                         (
                             address airline,
                             string flight,
-                            uint256 timestamp                            
+                            uint256 timestamp
                         )
                         external
+                        requireIsOperational
     {
         uint8 index = getRandomIndex(msg.sender);
 
@@ -248,12 +236,22 @@ contract FlightSuretyApp {
     // they fetch data and submit a response
     event OracleRequest(uint8 index, address airline, string flight, uint256 timestamp);
 
+    function fundAirline( address airlineAddress)
+                    requireIsOperational
+                    external
+                    payable
+    {
+        //require (msg.value >= 10 ether, "Not enough funds @FlightSuretyApp");
+        flightSuretyData.fund.value(msg.value)(airlineAddress);
+    }
+
     // Register an oracle with the contract
     function registerOracle
                             (
                             )
                             external
                             payable
+                            requireIsOperational
     {
         // Require registration fee
         require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
@@ -291,10 +289,11 @@ contract FlightSuretyApp {
                             uint8 statusCode
                         )
                         external
+                        requireIsOperational
     {
         require((oracles[msg.sender].indexes[0] == index) || (oracles[msg.sender].indexes[1] == index) || (oracles[msg.sender].indexes[2] == index), "Index does not match oracle request");
 
-
+        //STATUS_CODE_LATE_AIRLINE;
         bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp));
         require(oracleResponses[key].isOpen, "Flight or timestamp do not match oracle request");
 
@@ -374,16 +373,19 @@ contract FlightSuretyApp {
                             string flight,
                             uint256 timestamp)
                             external
-                            returns (bytes memory)
+                            payable
+                            requireIsOperational
+                            returns (uint256)
     {
-        return flightSuretyData.buy (airline, flight, timestamp, insurancePrice);
+        return flightSuretyData.buy (airline, flight, timestamp);
     }
 }
 
 // endregion
 contract FlightSuretyData {
     function isOperational()  view external returns(bool);
-    function buy (address airline, string flight, uint256 timestamp, uint256 amount) external payable returns (bytes memory); 
+    function buy (address airline, string flight, uint256 timestamp ) external payable returns ( uint256 ); 
     function registerAirline(address addr, string airline) external returns(bool success, uint256 votes);
-    function creditInsurees ( bytes32 keyFlight,  uint256 amount ) external;
+    function creditInsurees ( bytes32 keyFlight ) external;
+    function fund(address airlineAddress)  external  payable;
 }

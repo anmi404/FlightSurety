@@ -8,6 +8,7 @@ import './flightsurety.css';
     let result = null;
 
     let contract = new Contract('localhost', () => {
+ //   this.flightSuretyApp = new this.web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
 
         // Read transaction
         contract.isOperational((error, result) => {

@@ -9,7 +9,8 @@ let web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('htt
 web3.eth.defaultAccount = web3.eth.accounts[0];
 let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
 
-
+//"@Alvaro: always update the status of the flight to delayed 
+// by executing the function in the smart contract to submit an oracle response"
 flightSuretyApp.events.OracleRequest({
     fromBlock: 0
   }, function (error, event) {

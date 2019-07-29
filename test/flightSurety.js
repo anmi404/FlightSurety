@@ -120,8 +120,237 @@ contract('Flight Surety Tests', async (accounts) => {
 
   });
 
-     let gas = await web3.eth.getGasPrice()
-     let fee = tx.receipt.gasUsed * gas 
-  
+it('(airline) Only existing airline may register a new airline until there are at least four airlines registered', async () => {
+    
+    // ARRANGE
+    let newAirline1 = accounts[2];
+    let newAirline2 = accounts[3];
+    let newAirline3 = accounts[4];
 
-});
+    let result1 = false;
+    let result2 = false;
+    // ACT
+    try {
+        await config.flightSuretyApp.registerAirline(newAirline1, {from: config.firstAirline});
+        await config.flightSuretyApp.fundAirline (newAirline1, {from: config.firstAirline});
+        result1 = await config.flightSuretyData.isAirline.call(newAirline1); 
+
+        await config.flightSuretyApp.registerAirline(newAirline2, {from: newAirline3});
+        await config.flightSuretyApp.fundAirline (newAirline2, {from: newAirline3});
+        result2 = await config.flightSuretyData.isAirline.call(newAirline2);      
+    }
+    catch(e) {
+    }
+
+    // ASSERT
+    assert(result1==true && result2==false, "Only existing airline may register a new airline");
+
+  });
+/*
+  it('(airline) //Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines', async () => {
+    
+    // ARRANGE
+    let newAirline1 = accounts[2];
+    let newAirline2 = accounts[3];
+    let newAirline3 = accounts[4];
+
+    let result1 = false;
+    let result2 = false;
+    // ACT
+    try {
+        await config.flightSuretyApp.registerAirline(newAirline1, {from: config.firstAirline});
+        await config.flightSuretyApp.fundAirline (newAirline1, {from: config.firstAirline});
+        result1 = await config.flightSuretyData.isAirline.call(newAirline1); 
+
+        await config.flightSuretyApp.registerAirline(newAirline2, {from: newAirline3});
+        await config.flightSuretyApp.fundAirline (newAirline2, {from: newAirline3});
+        result2 = await config.flightSuretyData.isAirline.call(newAirline2);      
+    }
+    catch(e) {
+    }
+
+    // ASSERT
+    assert(result1==true && result2==false, "Only existing airline may register a new airline");
+
+  });
+
+  it('(airline) Airline can be registered, but does not participate in contract until it submits funding of 10 ether', async () => {
+    
+    // ARRANGE
+    let newAirline1 = accounts[2];
+    let newAirline2 = accounts[3];
+    let newAirline3 = accounts[4];
+
+    let result1 = false;
+    let result2 = false;
+    // ACT
+    try {
+        await config.flightSuretyApp.registerAirline(newAirline1, {from: config.firstAirline});
+        await config.flightSuretyApp.fundAirline (newAirline1, {from: config.firstAirline});
+        result1 = await config.flightSuretyData.isAirline.call(newAirline1); 
+
+        await config.flightSuretyApp.registerAirline(newAirline2, {from: newAirline3});
+        await config.flightSuretyApp.fundAirline (newAirline2, {from: newAirline3});
+        result2 = await config.flightSuretyData.isAirline.call(newAirline2);      
+    }
+    catch(e) {
+    }
+
+    // ASSERT
+    assert(result1==true && result2==false, "Only existing airline may register a new airline");
+
+  });  
+
+  it('(Passengers)   Passengers may pay up to 1 ether for purchasing flight insurance.', async () => {
+    
+    // ARRANGE
+    let newAirline1 = accounts[2];
+    let newAirline2 = accounts[3];
+    let newAirline3 = accounts[4];
+
+    let result1 = false;
+    let result2 = false;
+    // ACT
+    try {
+        await config.flightSuretyApp.registerAirline(newAirline1, {from: config.firstAirline});
+        await config.flightSuretyApp.fundAirline (newAirline1, {from: config.firstAirline});
+        result1 = await config.flightSuretyData.isAirline.call(newAirline1); 
+
+        await config.flightSuretyApp.registerAirline(newAirline2, {from: newAirline3});
+        await config.flightSuretyApp.fundAirline (newAirline2, {from: newAirline3});
+        result2 = await config.flightSuretyData.isAirline.call(newAirline2);      
+    }
+    catch(e) {
+    }
+
+    // ASSERT
+    assert(result1==true && result2==false, "Only existing airline may register a new airline");
+
+  });  
+
+
+it('(Passengers) If flight is delayed due to airline fault, passenger receives credit of 1.5X the amount they paid', async () => {
+    
+    // ARRANGE
+    let newAirline1 = accounts[2];
+    let newAirline2 = accounts[3];
+    let newAirline3 = accounts[4];
+
+    let result1 = false;
+    let result2 = false;
+    // ACT
+    try {
+        await config.flightSuretyApp.registerAirline(newAirline1, {from: config.firstAirline});
+        await config.flightSuretyApp.fundAirline (newAirline1, {from: config.firstAirline});
+        result1 = await config.flightSuretyData.isAirline.call(newAirline1); 
+
+        await config.flightSuretyApp.registerAirline(newAirline2, {from: newAirline3});
+        await config.flightSuretyApp.fundAirline (newAirline2, {from: newAirline3});
+        result2 = await config.flightSuretyData.isAirline.call(newAirline2);      
+    }
+    catch(e) {
+    }
+
+    // ASSERT
+    assert(result1==true && result2==false, "Only existing airline may register a new airline");
+
+  });  
+
+
+//1)Get balance of the passenger previous to the transaction
+
+//2) Get gasUsed by the transaction and multiply it by the gas price, to get the amount of WEI consumed in the transaction
+
+//3) Get balance of the passenger after the transaction
+
+//4) Check that this is valid:
+
+//     let gas = await web3.eth.getGasPrice()
+//     let fee = tx.receipt.gasUsed * gas 
+//previousBalance < gasUsedWEI + afterBalance
+
+
+  it('(Passenger) Passenger can withdraw any funds owed to them as a result of receiving credit for insurance payout', async () => {
+    
+    // ARRANGE
+    let newAirline1 = accounts[2];
+    let newAirline2 = accounts[3];
+    let newAirline3 = accounts[4];
+
+    let result1 = false;
+    let result2 = false;
+    // ACT
+    try {
+        await config.flightSuretyApp.registerAirline(newAirline1, {from: config.firstAirline});
+        await config.flightSuretyApp.fundAirline (newAirline1, {from: config.firstAirline});
+        result1 = await config.flightSuretyData.isAirline.call(newAirline1); 
+
+        await config.flightSuretyApp.registerAirline(newAirline2, {from: newAirline3});
+        await config.flightSuretyApp.fundAirline (newAirline2, {from: newAirline3});
+        result2 = await config.flightSuretyData.isAirline.call(newAirline2);      
+    }
+    catch(e) {
+    }
+
+    // ASSERT
+    assert(result1==true && result2==false, "Only existing airline may register a new airline");
+
+  });  
+  
+  
+  it('(Oracle) Upon startup, 20+ oracles are registered and their assigned indexes are persisted in memory', async () => {
+    
+    // ARRANGE
+    let newAirline1 = accounts[2];
+    let newAirline2 = accounts[3];
+    let newAirline3 = accounts[4];
+
+    let result1 = false;
+    let result2 = false;
+    // ACT
+    try {
+        await config.flightSuretyApp.registerAirline(newAirline1, {from: config.firstAirline});
+        await config.flightSuretyApp.fundAirline (newAirline1, {from: config.firstAirline});
+        result1 = await config.flightSuretyData.isAirline.call(newAirline1); 
+
+        await config.flightSuretyApp.registerAirline(newAirline2, {from: newAirline3});
+        await config.flightSuretyApp.fundAirline (newAirline2, {from: newAirline3});
+        result2 = await config.flightSuretyData.isAirline.call(newAirline2);      
+    }
+    catch(e) {
+    }
+
+    // ASSERT
+    assert(result1==true && result2==false, "Only existing airline may register a new airline");
+
+  });  
+
+  it('(Server) Server will loop through all registered oracles, identify those oracles for which the OracleRequest event applies, and respond by calling into FlightSuretyApp contract with random status code of Unknown (0), On Time (10) or Late Airline (20), Late Weather (30), Late Technical (40), or Late Other (50)', async () => {
+    
+    // ARRANGE
+    let newAirline1 = accounts[2];
+    let newAirline2 = accounts[3];
+    let newAirline3 = accounts[4];
+
+    let result1 = false;
+    let result2 = false;
+    // ACT
+    try {
+        await config.flightSuretyApp.registerAirline(newAirline1, {from: config.firstAirline});
+        await config.flightSuretyApp.fundAirline (newAirline1, {from: config.firstAirline});
+        result1 = await config.flightSuretyData.isAirline.call(newAirline1); 
+
+        await config.flightSuretyApp.registerAirline(newAirline2, {from: newAirline3});
+        await config.flightSuretyApp.fundAirline (newAirline2, {from: newAirline3});
+        result2 = await config.flightSuretyData.isAirline.call(newAirline2);      
+    }
+    catch(e) {
+    }
+
+    // ASSERT
+    assert(result1==true && result2==false, "Only existing airline may register a new airline");
+
+  });  
+*/
+
+}); 

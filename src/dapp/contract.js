@@ -16,8 +16,6 @@ export default class Contract {
         this.passengers = [];
     }
 
-
-
     initialize(callback) {
         this.web3.eth.getAccounts((error, accts) => {
             let self = this;

@@ -236,6 +236,7 @@ contract FlightSuretyApp {
     // they fetch data and submit a response
     event OracleRequest(uint8 index, address airline, string flight, uint256 timestamp);
 
+    //https://ethereum.stackexchange.com/questions/9705/how-can-you-call-a-payable-function-in-another-contract-with-arguments-and-send/9722?source=post_page---------------------------
     function fundAirline( address airlineAddress)
                     requireIsOperational
                     external

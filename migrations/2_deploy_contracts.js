@@ -4,11 +4,11 @@ const fs = require('fs');
 
 module.exports = function(deployer) {
 
-    let firstAirline = '0x9c5073e861405c8f2c3afc9932bc026310012f41';
+    let firstAirline = undefined;
     deployer.deploy(FlightSuretyData)
     .then(() => {
         return deployer.deploy(FlightSuretyApp, FlightSuretyData.address)
-                .then(() => {
+                .then(async () => {
                     let config = {
                         localhost: {
                             url: 'http://localhost:8545',
@@ -16,6 +16,13 @@ module.exports = function(deployer) {
                             appAddress: FlightSuretyApp.address
                         }
                     }
+                    // Call constructors
+                    accounts = await web3.eth.getAccounts();
+                    firstAirline = accounts[1];
+                    let flightSuretyData = await FlightSuretyData.new(firstAirline);
+                    let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address);
+                    await flightSuretyData.authorizeCaller(flightSuretyApp.address);
+
                     fs.writeFileSync(__dirname + '/../src/dapp/config.json',JSON.stringify(config, null, '\t'), 'utf-8');
                     fs.writeFileSync(__dirname + '/../src/server/config.json',JSON.stringify(config, null, '\t'), 'utf-8');
                 });

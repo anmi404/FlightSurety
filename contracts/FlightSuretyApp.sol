@@ -384,7 +384,8 @@ contract FlightSuretyApp {
                             requireIsOperational
                             returns (uint256)
     {
-        return flightSuretyData.buy (airline, flight, timestamp);
+        uint256 txId = flightSuretyData.buy.value(msg.value)(airline, flight, timestamp, msg.sender);
+        return txId;
     }
 
     function getCreditAmount (address passenger) external view requireIsOperational 
@@ -397,7 +398,7 @@ contract FlightSuretyApp {
 // endregion
 contract FlightSuretyData {
     function isOperational()  view external returns(bool);
-    function buy (address airline, string flight, uint256 timestamp ) external payable returns ( uint256 ); 
+    function buy (address airline, string flight, uint256 timestamp , address from) external payable returns ( uint256 ); 
     function registerAirline(address addr, string airline, address registeringAirline) external returns(bool success);
     function creditInsurees ( bytes32 keyFlight ) external;
     function fund(address airlineAddress)  external  payable;

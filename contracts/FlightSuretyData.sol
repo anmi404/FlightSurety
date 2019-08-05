@@ -51,12 +51,13 @@ contract FlightSuretyData {
        // address firstAirline = contractOwner; //test, remove!
 
         registeredAirlines[firstAirline] = airlinesRegistered({
+            funded: true,
             votes: 1,
-            elected: true,
             name: "First airline",
-            timestamp: block.timestamp,
-            funded: true
+            elected: true,
+            timestamp: 1 //block.timestamp //now
         });
+
         airlines.push(firstAirline);
         //this.fund.value(10 ether)(firstAirline);
         //registerAirline(firstAirline);
@@ -151,7 +152,7 @@ contract FlightSuretyData {
         return registeredAirlines[addr].elected;
     }
 
-        *
+    /*
     * @return For testing, cleans the list
     */      
     function cleansRegistered()  
@@ -272,19 +273,19 @@ contract FlightSuretyData {
     */   
     function buy
                             (
-                                address airline, string flight, uint256 timestamp
+                                address airline, string flight, uint256 timestamp, address from
                             )
                             external
                             payable
-                            //requireEnoughFunds(0)
+                            requireEnoughFunds(1)
                             //checkValue(insurancePrice, tx.origin)
-                            returns (uint256)
+                            returns (uint256 txId)
     {
 // Transfer money to fund
         bytes32 flightKey = keccak256(abi.encodePacked(airline, flight, timestamp));
-        uint256 txId = insuree[flightKey].push(clients({addr: tx.origin,value: msg.value}));
-        if (credit[msg.sender] == 0) { //force initialization
-            credit[msg.sender] = 0;
+        uint256 txId = insuree[flightKey].push(clients({addr: from, value: msg.value}));
+        if (credit[from] == 0) { //force initialization
+            credit[from] = 0;
         }
 
         return txId;
@@ -359,7 +360,7 @@ contract FlightSuretyData {
         //recipient.call.gas(0).value(...)
     {
         // check
-        require(msg.sender == tx.origin, "Contracts not allowed to call this function");
+        //require(msg.sender == tx.origin, "Contracts not allowed to call this function");
         //effect
         credit[msg.sender] = credit[msg.sender].sub(amount);
         //Interaction
@@ -380,9 +381,9 @@ contract FlightSuretyData {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
-    function getFlightData (address airline) view external  
-                        returns (string flight, uint256 timestamp) {
-        return (registeredAirlines[airline].name,  registeredAirlines[airline].timestamp);
+    function getFlightData (address addr) view external 
+                        returns (uint256 timestamp) {
+        return registeredAirlines[addr].timestamp;
     }
 
     function getCreditAmount (address passenger) external view requireIsOperational 

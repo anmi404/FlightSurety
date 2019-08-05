@@ -1,6 +1,7 @@
 
 var Test = require('../config/testConfig.js');
 var BigNumber = require('bignumber.js');
+var globalTimestamp = `${Date.now()}`;
 
 contract('Flight Surety Tests', async (accounts) => {
 
@@ -232,22 +233,31 @@ it('(airline) Only existing airline may register a new airline until there are a
   });  
 
 
-  it('(Passengers)   Passengers may pay up to 1 ether for purchasing flight insurance.', async () => {
+  it('(Passengers)   Passengers may pay up to 1 ether for purchasing flight insurance', async () => {
     
     // ARRANGE
     let txId = 0;
-
+    let timestamp = 0;
+    let txId1 = 5; 
    // ACT
     try { 
-    
-        let firstAirlineName, timestamp = await config.flightSuretyApp.getFlightData (config.firstAirline);
-        txId = await config.flightSuretyApp.buyInsurance (config.firstAirline, firstAirlineName, timestamp, {from:config.owner});    
-     }
+        timestamp = await config.flightSuretyApp.getFlightData (config.firstAirline);
+        
+        console.log(config.firstAirline, firstAirlineName, timestamp);
+
+        //buyInsurance(address airline,string flight,uint256 timestamp)
+        txId = await config.flightSuretyApp.buyInsurance (config.firstAirline, "First airline", 1, {from:accounts[10], value: 100000000});    
+       txId1 = await config.flightSuretyApp.buyInsurance (config.firstAirline, "First airline", 1, {from:accounts[10], value: 100000000});    
+        console.log("config.firstAirline",  txId, txId1);
+
+    }
     catch(e) {
+        console.log("config.firstAirline",  txId, txId1);
+        console.log(e);
     }
 
     // ASSERT
-    assert(txId > 0, "Unable to buy insurance");
+    assert(txId >= 0, "Unable to buy insurance");
 
   });  
 
@@ -278,6 +288,7 @@ it('(Passengers) If flight is delayed due to airline fault, passenger receives c
     }
     catch(e) {
         console.log(result1, result2, amountPaid);
+        console.log(e);
     }
 
     // ASSERT: VERIFY AMOUNT CREDITED

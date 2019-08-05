@@ -238,26 +238,25 @@ it('(airline) Only existing airline may register a new airline until there are a
     // ARRANGE
     let txId = 0;
     let timestamp = 0;
-    let txId1 = 5; 
    // ACT
     try { 
-        timestamp = await config.flightSuretyApp.getFlightData (config.firstAirline);
+            await config.flightSuretyApp.getFlightData.sendTransaction (config.firstAirline).then(function (timestamp, error) {
+            console.log(config.firstAirline, timestamp);
+        });
         
-        console.log(config.firstAirline, firstAirlineName, timestamp);
 
         //buyInsurance(address airline,string flight,uint256 timestamp)
-        txId = await config.flightSuretyApp.buyInsurance (config.firstAirline, "First airline", 1, {from:accounts[10], value: 100000000});    
-       txId1 = await config.flightSuretyApp.buyInsurance (config.firstAirline, "First airline", 1, {from:accounts[10], value: 100000000});    
-        console.log("config.firstAirline",  txId, txId1);
+        txId = await config.flightSuretyApp.buyInsurance.sendTransaction (config.firstAirline, "First airline", 1, {from:config.owner, value: 100000000});    
+        console.log("config.firstAirline ok",  txId);
 
     }
     catch(e) {
-        console.log("config.firstAirline",  txId, txId1);
+        console.log("config.firstAirline",  txId);
         console.log(e);
     }
 
     // ASSERT
-    assert(txId >= 0, "Unable to buy insurance");
+    assert(txId > 0, "Unable to buy insurance");
 
   });  
 

@@ -203,40 +203,31 @@ it('(airline) Only existing airline may register a new airline until there are a
   it('(airline) Airline can be registered, but does not participate in contract until it submits funding of 10 ether', async () => {
     
     // ARRANGE
-    let newAirline2 = accounts[2];
-    let newAirline3 = accounts[11];
-    let newAirline4 = accounts[12];
+    await config.flightSuretyData.cleansRegistered();
+
+    let newAirline2 = accounts[11];
+    let newAirline3 = accounts[12];
+    let newAirline4 = accounts[13];
 
     let result1 = false;
     let result2 = false;
-    let result3 = false;
     // ACT
     try {
+        //funded is ok
         await config.flightSuretyApp.registerAirline(newAirline2, "TESTFLIGHT", {from: config.firstAirline});
-        result1 = await config.flightSuretyData.airlineIsRegistered.call(newAirline3);  //false
-        result3 = await config.flightSuretyData.airlineIsFunded.call(newAirline2);  //false
-        console.log(result3);
-        await config.flightSuretyApp.registerAirline(newAirline3, "TESTFLIGHT", {from: newAirline2}); //error
-
-    }
-
-    catch(e) {
-        console.log("result1",result1, result3);
-        //console.log(e);
-    }        
-
-    try {
         await config.flightSuretyApp.fundAirline (newAirline2, {from: newAirline2, value: 1000000000});  //(new BigNumber(10)).pow(18)});
-        await config.flightSuretyApp.registerAirline(newAirline3, "TESTFLIGHT", {from: newAirline2}); //now ok
-        result2 = await config.flightSuretyData.airlineIsRegistered.call(newAirline2);   //true   
+        await config.flightSuretyApp.registerAirline(newAirline3, "TESTFLIGHT", {from: newAirline2}); //true
+        result1 = await config.flightSuretyData.airlineIsRegistered.call(newAirline3);  //true
+   
+        await config.flightSuretyApp.registerAirline(newAirline4, "TESTFLIGHT", {from: newAirline3}); //now ok
+        result2 = await config.flightSuretyData.airlineIsRegistered.call(newAirline2);   //false   
     }
     catch(e) {
-        console.log("result2", result2);
-        console.log(e);
+        //console.log(e);
     }
 
     // ASSERT
-    assert(result1==false && result2==true, "Only a funded airline may register a new airline");
+    assert(result1==true && result2==false, "Only a funded airline may register a new airline");
 
   });  
 

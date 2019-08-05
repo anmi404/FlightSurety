@@ -13,12 +13,13 @@ contract FlightSuretyData {
 
     address private contractOwner;        // Account used to deploy contract
     bool private operational = true;      // Blocks all state changes throughout the contract if false   
-    
+
     struct airlinesRegistered{
         bool funded;
         uint votes;
         string name;
         bool elected;
+        uint256 timestamp;
     }
 
     address[] airlines;
@@ -40,19 +41,26 @@ contract FlightSuretyData {
     */
     constructor
                                 (
-                                    address firstAirline
+                                   address firstAirline
                                 ) 
                                 public 
     {
-        contractOwner = msg.sender;   
+        contractOwner = msg.sender;  
 
-        registeredAirlines[firstAirline].votes = 1;
-        registeredAirlines[firstAirline].elected = true;
-        registeredAirlines[firstAirline].name = "first airline";
+
+       // address firstAirline = contractOwner; //test, remove!
+
+        registeredAirlines[firstAirline] = airlinesRegistered({
+            votes: 1,
+            elected: true,
+            name: "First airline",
+            timestamp: block.timestamp,
+            funded: true
+        });
         airlines.push(firstAirline);
+        //this.fund.value(10 ether)(firstAirline);
         //registerAirline(firstAirline);
         //flightSuretyData.registerAirline(firstAirline, firstAirlineName);
-        //flightSuretyData.fund.value(10 ether)(firstAirline);
     }
 
     /********************************************************************************************/
@@ -94,6 +102,17 @@ contract FlightSuretyData {
         require(msg.value >= amount, "Not enough funds");
         _;
     }
+
+    modifier requireAirlineIsElected (address addr) {
+        require (registeredAirlines[addr].elected==true, "Required by modifier to be registered by an elected/registered airline");
+        _;
+    }
+
+    modifier requireAirlineIsFunded (address addr) {
+        require (registeredAirlines[addr].funded==true, "Required by modifier to be funded");
+        _;
+    }
+
   
    // Define a modifier that checks the price and refunds the remaining balance
     modifier checkValue(uint256 price, address to) {
@@ -101,6 +120,7 @@ contract FlightSuretyData {
         uint256 amountToReturn = msg.value - price;
         if (amountToReturn >= 0) to.transfer(amountToReturn);
     }
+
 
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
@@ -121,16 +141,39 @@ contract FlightSuretyData {
 
   /**
     *
-    * @return A bool that is this is an airline
+    * @return A bool that is this is a voted/registered/elected airline
     */      
-    function isAirline(address addr)  
+    function airlineIsRegistered(address addr)  
                             view 
                             external
                             returns(bool) 
     {
         return registeredAirlines[addr].elected;
     }
- 
+
+        *
+    * @return For testing, cleans the list
+    */      
+    function cleansRegistered()  
+                            external
+    {
+        for (uint a = 2; a < airlines.length; a++ ) {
+            delete registeredAirlines[airlines[a]]; 
+        }
+        airlines.length = 1;
+    }
+
+  /**
+    *
+    * @return A bool that is this is a funded airline
+    */      
+    function airlineIsFunded(address addr)  
+                            view 
+                            external
+                            returns(bool) 
+    {
+        return registeredAirlines[addr].funded;
+    }
 
     /**
     * @dev Sets contract operations on/off
@@ -186,30 +229,33 @@ contract FlightSuretyData {
     */   
     function registerAirline
                             (   
-                                address addr, string airline
+                                address addr, string flight, address registeringAirline
                             )
                             external
-                            requireIsAuthorized(msg.sender)
-                            returns(bool success, uint256 votes)
+                            requireIsAuthorized(msg.sender) 
+                            returns(bool success) //, uint256 votes
     {
-        require ( registeredAirlines[msg.sender].funded == true, "cannot register an Airline using registerAirline() if it is not funded");
+        require (registeredAirlines[registeringAirline].funded==true, "Required that registering airline is funded");
+        require (registeredAirlines[registeringAirline].elected==true, "Required that registering airline is registered");        
         success = false;
-        if (registeredAirlines[addr].votes == 0) { 
+        if (registeredAirlines[addr].votes == 0) {
             registeredAirlines[addr].votes = 1;
-            registeredAirlines[addr].elected==false;
-            registeredAirlines[addr].name = airline;
+            registeredAirlines[addr].elected = false;
+            registeredAirlines[addr].name = flight;
         }
         else {
             registeredAirlines[addr].votes = registeredAirlines[addr].votes.add(1);
         }
+        
+        if (registeredAirlines[addr].elected == true) return true;
+
         // if enough voted
-        if (registeredAirlines[addr].elected==false && ( (airlines.length < 2 * registeredAirlines[addr].votes) || (airlines.length < 4 ))) {
-            airlines.push(addr);
-            registeredAirlines[addr].elected==true;
+        if ((airlines.length < 2 * registeredAirlines[addr].votes) || (airlines.length < 4 )) {
+            if (registeredAirlines[addr].funded==true) airlines.push(addr);
+            registeredAirlines[addr].elected = true;
             success = true;
         }
-    
-        return (success, registeredAirlines[addr].votes);
+        return (success); //, registeredAirlines[addr].votes
     }
 
     //Track everyone who paid the insurance
@@ -256,7 +302,7 @@ contract FlightSuretyData {
     {
         clients[] storage ins = insuree[keyFlight];
         for (uint i = 0; i < ins.length; i++) {
-            credit[ins[i].addr].add(3 * ins[i].value / 2);
+            credit[ins[i].addr] = credit[ins[i].addr].add(3 * ins[i].value / 2);
         }
     }
     
@@ -292,16 +338,17 @@ contract FlightSuretyData {
 
     function fund
                             (
-                                address airlineAddress
+                                address addr
 
                             )
                             external
                             payable
-                            //requireEnoughFunds(10 ether)
                             
     {
+        require (msg.value >= 10, "Insuficient payment");
         // if this is an airline, register as funded
-        registeredAirlines[airlineAddress].funded = true;
+        registeredAirlines[addr].funded = true;
+        if (registeredAirlines[addr].elected==true) airlines.push(addr);
     }
 
     function safeWithdraw
@@ -331,6 +378,16 @@ contract FlightSuretyData {
                         returns(bytes32)
     {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
+    }
+
+    function getFlightData (address airline) view external  
+                        returns (string flight, uint256 timestamp) {
+        return (registeredAirlines[airline].name,  registeredAirlines[airline].timestamp);
+    }
+
+    function getCreditAmount (address passenger) external view requireIsOperational 
+                            returns (uint256 amount){
+        return credit[passenger];
     }
 
     /**

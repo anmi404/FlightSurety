@@ -36,7 +36,7 @@ var Config = async function(accounts) {
     let owner = accounts[0];
     let firstAirline = accounts[1];
 
-    let flightSuretyData = await FlightSuretyData.new(firstairline);
+    let flightSuretyData = await FlightSuretyData.new(firstAirline); //firstAirline
     let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address);
 
     //var eth = BigNumber(10e+18).toString(16);

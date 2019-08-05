@@ -8,19 +8,42 @@ let TEST_ORACLES_COUNT = 20;
 let config = Config['localhost'];
 let web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('http', 'ws')));
 web3.eth.defaultAccount = web3.eth.accounts[0];
+let accounts = web3.eth.accounts;
 let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
-
-
 
   //In server.js register 20 oracles
 
-   for(let a=1; a<=TEST_ORACLES_COUNT; a++) {
+  for(let a=1; a<=TEST_ORACLES_COUNT; a++) {
     // Register 20 oracles
-      await config.flightSuretyApp.registerOracle(accounts[a]);
-   }
+    console.log("fee ", flightSuretyApp.REGISTRATION_FEE);
+      await config.flightSuretyApp.registerOracle({from: accounts[a], value:flightSuretyApp.REGISTRATION_FEE});
+  }
 
-  //In server.js handle the OracleRequest events that are emitted when the function fetchFlightStatusfunction is called
- /* flightSuretyApp.events.OracleRequest({
+  //In server.js handle the OracleRequest events that are emitted when the function fetchFlightStatus is called
+  // (emits OracleRequest)
+  // Event fired when flight status request is submitted
+  // Oracles track this and if they have a matching index
+  // they fetch data and submit a response
+  flightSuretyApp.events.OracleRequest(index, airline, flight, timestamp, {fromBlock: 0}, function (error, event) {
+      if (error) console.log(error);
+      console.log("Server received event OracleRequest: ", event);
+      for(let a=1; a<=TEST_ORACLES_COUNT; a++) {
+        // Every one of the 20 oracles will submit the response, only some of them will be successful
+          console.log("Oracle submitting response ");
+          //if having a matching index Oracles fetch data and submit a response
+          config.flightSuretyApp.submitOracleResponse (index,  airline,  flight,  timestamp,  20, {from: accounts[a]});      
+      }
+    }
+  );
+
+  const app = express();
+  app.get('/api', (req, res) => {
+      res.send({
+        message: 'An API for use with your Dapp!'
+      })
+  })
+
+  /* flightSuretyApp.events.OracleRequest({
     fromBlock: 0
   }, function (error, event) {
     if (error) console.log(error)
@@ -49,19 +72,7 @@ is implemented. When you run the command npm run server the 20 oracles need to b
 
 //"@Alvaro: always update the status of the flight to delayed 
 // by executing the function in the smart contract to submit an oracle response"
-flightSuretyApp.events.OracleRequest({
-    fromBlock: 0
-  }, function (error, event) {
-    if (error) console.log(error)
-    console.log(event)
-});
 
-const app = express();
-app.get('/api', (req, res) => {
-    res.send({
-      message: 'An API for use with your Dapp!'
-    })
-})
 
 export default app;
 

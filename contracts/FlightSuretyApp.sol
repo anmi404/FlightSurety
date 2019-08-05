@@ -106,16 +106,16 @@ contract FlightSuretyApp {
     *
     */   
     function registerAirline
-                            (   
-                                string airline
+                            (
+                                address addr,
+                                string flight
                             )
                             external
                             requireIsOperational
-                            returns(bool success, uint256 votes)
+                            returns(bool success)
     {
-        return flightSuretyData.registerAirline(msg.sender, airline);
+        return flightSuretyData.registerAirline(addr, flight, msg.sender);
     }
-
 
    /**
     * @dev Register a future flight for insuring.
@@ -176,8 +176,8 @@ contract FlightSuretyApp {
                             string flight,
                             uint256 timestamp
                         )
-                        external
-                        requireIsOperational
+                        external 
+                        requireIsOperational() 
     {
         uint8 index = getRandomIndex(msg.sender);
 
@@ -230,6 +230,7 @@ contract FlightSuretyApp {
     event OracleReport(address airline, string flight, uint256 timestamp, uint8 status);
 
     event FlightDelayed(address airline, string flight, uint256 timestamp);
+
 
     // Event fired when flight status request is submitted
     // Oracles track this and if they have a matching index
@@ -370,6 +371,11 @@ contract FlightSuretyApp {
         return random;
     }
 
+    function getFlightData (address airline) external requireIsOperational 
+                            returns (string flight, uint256 timestamp) {
+        return flightSuretyData.getFlightData(airline); //address
+    }
+
     function buyInsurance (address airline,
                             string flight,
                             uint256 timestamp)
@@ -380,13 +386,21 @@ contract FlightSuretyApp {
     {
         return flightSuretyData.buy (airline, flight, timestamp);
     }
+
+    function getCreditAmount (address passenger) external view requireIsOperational 
+                            returns (uint256 amount) {
+        return flightSuretyData.getCreditAmount(passenger); //address
+    }
+
 }
 
 // endregion
 contract FlightSuretyData {
     function isOperational()  view external returns(bool);
     function buy (address airline, string flight, uint256 timestamp ) external payable returns ( uint256 ); 
-    function registerAirline(address addr, string airline) external returns(bool success, uint256 votes);
+    function registerAirline(address addr, string airline, address registeringAirline) external returns(bool success);
     function creditInsurees ( bytes32 keyFlight ) external;
     function fund(address airlineAddress)  external  payable;
+    function getFlightData (address airline) external returns (string flight, uint256 timestamp);
+    function getCreditAmount (address passenger) external view returns (uint256 amount);
 }

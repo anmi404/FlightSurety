@@ -33,7 +33,7 @@ contract FlightSuretyApp {
         uint256 updatedTimestamp;        
         address airline;
     }
-    mapping(bytes32 => Flight) private flights;
+   // mapping(bytes32 => Flight) private flights;
 
     FlightSuretyData flightSuretyData;
 
@@ -149,23 +149,6 @@ contract FlightSuretyApp {
             emit FlightDelayed(airline,  flight,timestamp);
             flightSuretyData.creditInsurees(getFlightKey ( airline, flight, timestamp ) );
         }
-    }
-
-
-     // Query the status of any flight
-    function viewFlightStatus
-                            (
-                                string flight,
-                                uint256 timestamp
-                            )
-                            external
-                            view
-                            returns(uint8)
-    {
-            require(flights[flightKey].isRegistered, "Flight status not available");
-
-            bytes32 flightKey = keccak256(abi.encodePacked(flight, timestamp));
-            return flights[flightKey].statusCode;
     }
 
     // Generate a request for oracles to fetch flight information
@@ -372,7 +355,7 @@ contract FlightSuretyApp {
     }
 
     function getFlightData (address airline) external requireIsOperational 
-                            returns (string flight, uint256 timestamp) {
+                            returns (uint256 timestamp) {
         return flightSuretyData.getFlightData(airline); //address
     }
 
@@ -382,26 +365,23 @@ contract FlightSuretyApp {
                             external
                             payable
                             requireIsOperational
-                            returns (uint256)
     {
-        uint256 txId = flightSuretyData.buy.value(msg.value)(airline, flight, timestamp, msg.sender);
-        return txId;
+        flightSuretyData.buy.value(msg.value)(airline, flight, timestamp, msg.sender);
     }
 
     function getCreditAmount (address passenger) external view requireIsOperational 
                             returns (uint256 amount) {
         return flightSuretyData.getCreditAmount(passenger); //address
     }
-
 }
 
 // endregion
 contract FlightSuretyData {
     function isOperational()  view external returns(bool);
-    function buy (address airline, string flight, uint256 timestamp , address from) external payable returns ( uint256 ); 
+    function buy (address airline, string flight, uint256 timestamp , address from) external payable; 
     function registerAirline(address addr, string airline, address registeringAirline) external returns(bool success);
     function creditInsurees ( bytes32 keyFlight ) external;
     function fund(address airlineAddress)  external  payable;
-    function getFlightData (address airline) external returns (string flight, uint256 timestamp);
+    function getFlightData (address airline) external returns (uint256 timestamp);
     function getCreditAmount (address passenger) external view returns (uint256 amount);
 }

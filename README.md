@@ -23,10 +23,10 @@ A Dapp client has been created and is used for triggering contract calls. Client
 - Trigger contract to request flight status update
 
 #### Oracle Server Application
-A server app has been created for simulating oracle behavior. Server can be launched with “npm run server”
+A server app has been created for simulating oracle behavior. The server can be launched with “npm run server”
 
 #### Operational status control is implemented in contracts
-Students has implemented operational status control.
+The operational status control has been implemented.
 
 #### Fail Fast Contract
 Contract functions “fail fast” by having a majority of “require()” calls at the beginning of function body
@@ -36,7 +36,7 @@ Contract functions “fail fast” by having a majority of “require()” calls
 First airline is registered when contract is deployed.
 
 #### Multiparty Consensus
-Only existing airline may register a new airline until there are at least four airlines registered. Demonstrated either with Truffle test or by making call from client Dapp
+Only an existing airline may register a new airline until there are at least four airlines registered. Demonstrated either with Truffle test or by making call from client Dapp
 #### Multiparty Consensus
 Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines.
 Demonstrated either with Truffle test or by making call from client Dapp

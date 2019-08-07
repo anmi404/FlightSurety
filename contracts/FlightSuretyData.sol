@@ -34,7 +34,12 @@ contract FlightSuretyData {
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
     event FundsWithdrawed(address sender, uint256 value);
-
+    //event insuranceBought (uint256 txId, address from, uint256 value);
+    event insuranceBought (uint256 txId, address from, uint256 value, bytes32 flightKey, address airline, string flight, uint256 timestamp, uint256 credited);
+    event insureesCredited (address who, uint256 value, bytes32 flightKey, uint256 credited);
+    
+    
+    
     /**
     * @dev Constructor
     *      The deploying account becomes contractOwner
@@ -114,7 +119,6 @@ contract FlightSuretyData {
         _;
     }
 
-  
    // Define a modifier that checks the price and refunds the remaining balance
     modifier checkValue(uint256 price, address to) {
         _;
@@ -138,6 +142,11 @@ contract FlightSuretyData {
                             returns(bool) 
     {
         return operational;
+    }
+
+     function kill() external {
+        require(msg.sender == contractOwner, "Only the owner can kill this contract");
+        selfdestruct(contractOwner);
     }
 
   /**
@@ -211,7 +220,6 @@ contract FlightSuretyData {
         return (true);
     }
 
-
     function deauthorizeContract
                             (
                                 address contractAddress
@@ -221,7 +229,6 @@ contract FlightSuretyData {
     {
         delete authorizedCaller[contractAddress];
     }
-
 
    /**
     * @dev Add an airline to the registration queue
@@ -279,16 +286,12 @@ contract FlightSuretyData {
                             payable
                             requireEnoughFunds(1)
                             //checkValue(insurancePrice, tx.origin)
-                            returns (uint256 txId)
     {
 // Transfer money to fund
         bytes32 flightKey = keccak256(abi.encodePacked(airline, flight, timestamp));
         uint256 txId = insuree[flightKey].push(clients({addr: from, value: msg.value}));
-        if (credit[from] == 0) { //force initialization
-            credit[from] = 0;
-        }
-
-        return txId;
+        emit insuranceBought (txId, from, msg.value, flightKey, airline, flight, timestamp, credit[contractOwner]);
+        
     }
 
     /**
@@ -303,7 +306,8 @@ contract FlightSuretyData {
     {
         clients[] storage ins = insuree[keyFlight];
         for (uint i = 0; i < ins.length; i++) {
-            credit[ins[i].addr] = credit[ins[i].addr].add(3 * ins[i].value / 2);
+            credit[ins[i].addr] = credit[ins[i].addr].add(15 * ins[i].value.mul(15).div(10));
+            emit insureesCredited (ins[i].addr, ins[i].value, keyFlight, credit[ins[i].addr]);
         }
     }
     
@@ -381,7 +385,7 @@ contract FlightSuretyData {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
-    function getFlightData (address addr) view external 
+    function getFlightData (address addr ) view external 
                         returns (uint256 timestamp) {
         return registeredAirlines[addr].timestamp;
     }

@@ -358,7 +358,7 @@ contract FlightSuretyData {
 
     function safeWithdraw
     (
-        uint256 amount
+        uint256 amount, address sender
     )
         external requireEnoughFunds (amount)
         //recipient.call.gas(0).value(...)
@@ -366,10 +366,10 @@ contract FlightSuretyData {
         // check
         //require(msg.sender == tx.origin, "Contracts not allowed to call this function");
         //effect
-        credit[msg.sender] = credit[msg.sender].sub(amount);
+        credit[sender] = credit[sender].sub(amount);
         //Interaction
-        msg.sender.transfer(amount);
-        emit FundsWithdrawed(msg.sender, amount);
+        sender.transfer(amount);
+        emit FundsWithdrawed(sender, amount);
     }
 
     function getFlightKey

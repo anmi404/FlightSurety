@@ -48,7 +48,11 @@ function testOracles(accounts) {
   // Event fired when flight status request is submitted
   // Oracles track this and if they have a matching index
   // they fetch data and submit a response
-  
+
+      let events = flightSuretyApp.events.allEvents(function(error, result) {
+        console.log(events, error, result);
+      });
+      
       flightSuretyApp.events.OracleRequest({fromBlock: 0, toBlock: 'latest'}, function (error, event) {
         console.log("Server received event OracleRequest: ", event);
         let index = event.returnValues.index;

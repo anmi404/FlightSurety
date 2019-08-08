@@ -21,33 +21,23 @@
     </nav>
 
     <main class="container">
- 
-        <div id="display-wrapper" class="left-20">
-        </div>
-        <div class="row top-20">
-            <label class="form">Flight</label> <input type="text" id="flight-number">
+        <div style="flex: 1;">
+            <label> Flights <select id="flight-number"> </select> </label>
             <label class="form">Flight Status</label> <input type="text" id="flight-status" readonly>
+            <label > Amount (ether) <input style="margin-left: 7px" id="valueStep" type="number" min="0" max="1" step="0.1"> </label>
         </div>
 
-        <div class="top-20"></div>
-            <btn class="btn btn-primary" id="pay-insurance">Pay insurance</btn>
+        <div class="top-20" flex-direction: column;>
+            <!-- airline sends funds,style="display: flex; " -->
+            <btn class="btn btn-primary" id="fund-airline">Fund airline</btn>
+            <!-- passenger buys flight insurance,,-->
+            <btn class="btn btn-primary" id="pay-insurance">Buy insurance</btn>
+            <!-- airline updates flight status, ,-->
             <btn class="btn btn-primary" id="submit-oracle">Flight Status</btn>
-         </div>  
+            <!-- passenger claims insurance payout. ,-->
+            <btn class="btn btn-primary" id="claim-insurance">Claim insurance payout</btn>
+        </div>  
 
-
-       <!-- <div id="display-wrapper" class="top-20">
-            
-                <div class="left-20"></div>
-                    <label class="form">Flight</label> <input type="text" id="flight-number"> 
-                    <btn class="btn btn-primary" id="pay-insurance ">Pay insurance</btn>
-                </div>
-                <div class="left-20"></div>
-                <label class="form">Flight</label> <input type="text" id="flight-number">
-                <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
-            
-
-            </div>   
-        -->
     </main>
 
 </body>

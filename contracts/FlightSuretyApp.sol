@@ -373,6 +373,15 @@ contract FlightSuretyApp {
                             returns (uint256 amount) {
         return flightSuretyData.getCreditAmount(passenger); //address
     }
+
+    function safeWithdraw
+    (
+        uint256 amount
+    ) external
+    {
+        flightSuretyData.safeWithdraw(amount, msg.sender);
+    }
+
 }
 
 // endregion
@@ -384,4 +393,5 @@ contract FlightSuretyData {
     function fund(address airlineAddress)  external  payable;
     function getFlightData (address airline) external returns (uint256 timestamp);
     function getCreditAmount (address passenger) external view returns (uint256 amount);
+    function safeWithdraw ( uint256 amount, address sender ) external;
 }

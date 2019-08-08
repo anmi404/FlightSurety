@@ -3,14 +3,23 @@ var Test = require('../config/testConfig.js');
 var BigNumber = require('bignumber.js');
 var globalTimestamp = `${Date.now()}`;
 
+
 contract('Flight Surety Tests', async (accounts) => {
 
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
     await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
-    //let result = await flightSuretyApp.fundAirline(firstAirline, {from:firstAirline, value: (new BigNumber(10)).pow(18)});
-    //  flightSuretyApp.registerAirline("FirstAirline", {from:firstAirline});
+    //  @testconfig.js:  let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address);
+    let events = config.flightSuretyApp.allEvents(function(error, result) {
+        /*if (result.event === 'OracleRequest') {
+          console.log("Oracle"); //`\n\nOracle Requested: index: ${result.args.index.toNumber()}, flight:  ${result.args.flight}, timestamp: ${result.args.timestamp.toNumber()}`);
+        } else {
+          console.log("Outro"); //`\n\nFlight Status Available: flight: ${result.args.flight}, timestamp: ${result.args.timestamp.toNumber()}, status: ${result.args.status.toNumber() == ON_TIME ? 'ON TIME' : 'DELAYED'}, verified: ${result.args.verified ? 'VERIFIED' : 'UNVERIFIED'}`);
+        }
+        */
+        console.log(events);
+      });
   });
 
   /****************************************************************************************/
@@ -45,7 +54,6 @@ contract('Flight Surety Tests', async (accounts) => {
           accessDenied = true;
 
       }
-
 
       assert.equal(accessDenied, true, "cannot block access to setOperatingStatus() for non-Contract Owner account");
 

@@ -28,29 +28,7 @@ function testOracles(accounts) {
     flightSuretyApp.methods.REGISTRATION_FEE().call().then((fee) => {
       //promise
       flightSuretyApp.methods.registerOracle().send({"from": accounts[a], "value": fee, "gas": 4712388, "gasPrice": 100000000000})
-        .then(() => { 
-
-          flightSuretyApp.events.OracleRequest({fromBlock: 0, toBlock: 'latest'}, function (error, event) {
-            console.log("Server received event OracleRequest: ", error, event);
-            let index = event.returnValues.index;
-            let airline = event.returnValues.airline;
-            let flight = event.returnValues.flight;
-            let timestamp = event.returnValues.timestamp;
-            for(let a=1; a<TEST_ORACLES_COUNT; a++) {
-              // Every one of the 20 oracles will submit the response, only some of them will be successful
-                console.log("Oracle submitting response ");
-                //if having a matching index Oracles fetch data and submit a response
-                config.flightSuretyApp.submitOracleResponse.send (index,  airline,  flight,  timestamp,  20).send({"from": accounts[a]})
-                .then(result => {
-                  console.log("Oracle was successful");
-                })
-                .catch(error => {
-                  console.log("Oracle was unlucky");
-                });
-            }
-
-          });
-    
+        .then(() => {    
         })
         .catch(e => {
           console.log ("register", e);
@@ -60,6 +38,46 @@ function testOracles(accounts) {
       console.log ("fee", e);
     });
   }
+  flightSuretyApp.events.OracleRequest({fromBlock: 0, toBlock: 'latest'}, function (error, event) {
+    console.log("Server received event OracleRequest: ", error, event);
+    let index = event.returnValues.index;
+    let airline = event.returnValues.airline;
+    let flight = event.returnValues.flight;
+    let timestamp = event.returnValues.timestamp;
+    for(let a=1; a<TEST_ORACLES_COUNT; a++) {
+      // Every one of the 20 oracles will submit the response, only some of them will be successful
+        console.log("Oracle submitting response ");
+        //if having a matching index Oracles fetch data and submit a response
+        config.flightSuretyApp.submitOracleResponse.send (index,  airline,  flight,  timestamp,  20).send({"from": accounts[a]})
+        .then(result => {
+          console.log("Oracle was successful");
+        })
+        .catch(error => {
+          console.log("Oracle was unlucky");
+        });
+    }
+    flightSuretyApp.events.OracleRequest({fromBlock: 0, toBlock: 'latest'}, function (error, event) {
+      console.log("Server received event OracleRequest: ", error, event);
+      let index = event.returnValues.index;
+      let airline = event.returnValues.airline;
+      let flight = event.returnValues.flight;
+      let timestamp = event.returnValues.timestamp;
+      for(let a=1; a<TEST_ORACLES_COUNT; a++) {
+        // Every one of the 20 oracles will submit the response, only some of them will be successful
+          console.log("Oracle submitting response ");
+          //if having a matching index Oracles fetch data and submit a response
+          config.flightSuretyApp.submitOracleResponse.send (index,  airline,  flight,  timestamp,  20).send({"from": accounts[a]})
+          .then(result => {
+            console.log("Oracle was successful");
+          })
+          .catch(error => {
+            console.log("Oracle was unlucky");
+          });
+      }
+
+    });
+
+  });
 }      //console.log(a, accounts[a], fee);
   
        /* flightSuretyApp.methods.getMyIndexes().call({

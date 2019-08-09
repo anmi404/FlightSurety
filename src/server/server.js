@@ -15,13 +15,12 @@ let TEST_ORACLES_COUNT = 20;
 
   //In server.js register 20 oracles
 web3.eth.getAccounts().then (async accounts => {
-  await flightSuretyData.methods.authorizeCaller(config.appAddress).send({"from": this.owner})
+  await flightSuretyData.methods.authorizeCaller(config.appAddress).send({"from": accounts[0]})
     .then (() => {
       testOracles(accounts);
     })
     .catch(e=>{console.log("authorize caller", e);});
 });
-
 
 function testOracles(accounts) {
   for(let a=1; a<=TEST_ORACLES_COUNT; a++) {

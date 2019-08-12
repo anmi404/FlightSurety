@@ -1,6 +1,9 @@
 
 var Test = require('../config/testConfig.js');
 //var BigNumber = require('bignumber.js');
+const flightSuretyApp = artifacts.require('FlightSuretyApp');
+const assert = require("chai").assert;
+const truffleAssert = require('truffle-assertions');
 
 contract('Oracles', async (accounts) => {
 
@@ -48,8 +51,13 @@ contract('Oracles', async (accounts) => {
     let timestamp = Math.floor(Date.now() / 1000);
 
     // Submit a request for oracles to get status information for a flight
-    await config.flightSuretyApp.fetchFlightStatus(config.firstAirline, flight, timestamp);
-    // ACT
+    let myreceipt = await config.flightSuretyApp.fetchFlightStatus(config.firstAirline, flight, timestamp);
+
+    // ACT emit OracleRequest(index, airline, flight, timestamp)
+    truffleAssert.eventEmitted(myreceipt, 'OracleRequest', (ev) => {
+      console.log(ev.index, ev.airline, ev.flight, ev.timestamp);
+      return true;
+    });
 
     // Since the Index assigned to each test account is opaque by design
     // loop through all the accounts and for each account, all its Indexes (indices?)
@@ -65,8 +73,10 @@ contract('Oracles', async (accounts) => {
           // Submit a response...it will only be accepted if there is an Index match
           //console.log( oracleIndexes[idx], accounts[a], flight, timestamp, STATUS_CODE_ON_TIME);
 
-          await config.flightSuretyApp.submitOracleResponse(oracleIndexes[idx], config.firstAirline, flight, timestamp, STATUS_CODE_ON_TIME, { from: accounts[a] });
+          await config.flightSuretyApp.submitOracleResponse(oracleIndexes[idx], config.firstAirline, flight, timestamp, STATUS_CODE_ON_TIME, { from: accounts[a] })
                       
+          //OracleReport(airline, flight, timestamp, statusCode);
+
           console.log(  idx, oracleIndexes[idx].toNumber(), flight, timestamp, a);
     
         }
@@ -77,7 +87,6 @@ contract('Oracles', async (accounts) => {
 
       }
     }
-
 
   }); 
 });

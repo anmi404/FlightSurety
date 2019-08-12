@@ -2,6 +2,11 @@
 var Test = require('../config/testConfig.js');
 var BigNumber = require('bignumber.js');
 var globalTimestamp = `${Date.now()}`;
+const flightSuretyApp = artifacts.require('FlightSuretyApp');
+const assert = require("chai").assert;
+const truffleAssert = require('truffle-assertions');
+const TEST_ORACLES_COUNT = 20;
+//FlightSuretyApp already available?
 
 
 contract('Flight Surety Tests', async (accounts) => {
@@ -11,15 +16,15 @@ contract('Flight Surety Tests', async (accounts) => {
     config = await Test.Config(accounts);
     await config.flightSuretyData.authorizeCaller(config.flightSuretyApp.address);
     //  @testconfig.js:  let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address);
-    let events = config.flightSuretyApp.allEvents(function(error, result) {
+    //let events = config.flightSuretyApp.allEvents(function(error, result) {
         /*if (result.event === 'OracleRequest') {
           console.log("Oracle"); //`\n\nOracle Requested: index: ${result.args.index.toNumber()}, flight:  ${result.args.flight}, timestamp: ${result.args.timestamp.toNumber()}`);
         } else {
           console.log("Outro"); //`\n\nFlight Status Available: flight: ${result.args.flight}, timestamp: ${result.args.timestamp.toNumber()}, status: ${result.args.status.toNumber() == ON_TIME ? 'ON TIME' : 'DELAYED'}, verified: ${result.args.verified ? 'VERIFIED' : 'UNVERIFIED'}`);
         }
         */
-        console.log(events);
-      });
+      //  console.log("err/result", error, result);
+      //});
   });
 
   /****************************************************************************************/
@@ -275,67 +280,98 @@ it('(airline) Only existing airline may register a new airline until there are a
 
   });  
 
-it('(Passengers) If flight is delayed due to airline fault, passenger receives credit of 1.5X the amount they paid', async () => {
+/*it('(Passengers) If flight is delayed due to airline fault, passenger receives credit of 1.5X the amount they paid', async () => {
     
     // ARRANGE
     let result1 = undefined;
     let result2 = undefined;
     let amountPaid = undefined;
+    let sucess = 0;
+    let index = undefined;
     // ACT
     try {
         let firstAirlineName, timestamp = await config.flightSuretyApp.getFlightData.call (config.firstAirline);
         //(address airline,string flight, uint256 timestamp)
-        await config.flightSuretyApp.getCreditAmount.call(config.owner).then (async function (amount1) {
-            console.log("already had ", amount1.toNumber());
+        console.log("timestamp", timestamp);
+        await config.flightSuretyApp.getCreditAmount.call(config.owner).then (async function (result1) {
+            //Initial value in amount1.toNumber()
             flight = new String("First airline");
             await config.flightSuretyApp.buyInsurance.sendTransaction (config.firstAirline, flight.toString(), timestamp, {"from":config.owner, "value": 100000000})
-                .then(async function() { 
                     //insuranceBought event
-                    await config.flightSuretyApp.fetchFlightStatus.sendTransaction (config.firstAirline, "First airline", timestamp, {from: config.owner})
-                    .then(async () => {
-                        await config.flightSuretyApp.getCreditAmount.call(config.owner)
-                        .then (async function (amount2) {
-                            console.log("now has ", amount2.toNumber());
-                        })
-                        .catch(e => {
-                            console.log("getCreditAmount", e);
-                        });
-                    })
-                    .catch(e=>{console.log("fetch");});
-                })
-                .catch(e => {
-                    console.log("buyInsurance", e);
-                });
+            .then(async () => {
+                let fee = await config.flightSuretyApp.REGISTRATION_FEE.call();
+                // ACT
+                for(let a=1; a<TEST_ORACLES_COUNT; a++) {      
+                    await config.flightSuretyApp.registerOracle.sendTransaction({ from: accounts[a], value: fee });
+                    result = await config.flightSuretyApp.getMyIndexes.call({from: accounts[a]});
+                    let tx = await config.flightSuretyApp.fetchFlightStatus(config.firstAirline, "First airline", timestamp, {from: config.owner});
+                    
+                    //event OracleRequest(uint8 index, address airline, string flight, uint256 timestamp);
+                    truffleAssert.eventEmitted(tx, 'OracleRequest', (ev) => {
+                        console.log(ev.index, ev.airline, ev.flight, ev.timestamp);
+                        return true;
+                    });
+                    let oracleIndexes = await config.flightSuretyApp.getMyIndexes.call({from: accounts[a]});
+
+                    for(let idx=0;idx<3;idx++) {
+
+                        try {
+                            // Submit a response...it will only be accepted if there is an Index match
+                            //console.log( oracleIndexes[idx], accounts[a], flight, timestamp, STATUS_CODE_ON_TIME);
+                            
+                            await config.flightSuretyApp.submitOracleResponse(oracleIndexes[idx], config.firstAirline, flight, timestamp, 20, { from: accounts[a] });
+                            console.log("Submitting oracle response");
+                        }
+                        catch{
+                            console.log("Not submitting oracle response");
+
+                        };
+
+                        let tx_data = await truffleAssert.createTransactionResult(config.flightSuretyData, tx.tx);
+                        truffleAssert.eventEmitted(tx, 'OracleReport', () => {return true;});
+                        sucess++;
+                        if (success>3) {
+                            //   event FlightStatusInfo(address airline, string flight, uint256 timestamp, uint8 status);
+                            truffleAssert.eventEmitted(tx, 'FlightStatusInfo');
+                            // event insureesCredited (address who, uint256 value, bytes32 flightKey, uint256 credited);
+                            truffleAssert.eventEmitted(tx_data, 'insureesCredited', null, 'insureesCredited not emitted');
+                            truffleAssert.eventEmitted(tx_data, 'insureesCredited', (ev) => {
+                            console.log(web3.utils.fromWei(ev.credited.toString(), 'ether'));
+                            console.log(web3.utils.fromWei(ev.value.toString(), 'ether'));
+                            return ev.who === config.owner && ev.credited.eq(ev.value.mul(15).div(10));
+                            }, 'InsureeCredit emited wrong parameters');
+                            return;
+                        }
+                    }
+                }
+                   
+            })
+            .catch(e => {
+                console.log("1", e);
+            });
         })
         .catch(e => {
-            console.log("credit amount", e);
+            console.log("2", e);
         });
     }
-    catch(e) {
-        console.log(amount1, amount2);
-        console.log("try", e);
+    catch (e) {
+        console.log("error on try", e);
     }
-
-                    /*config.flightSuretyApp.events.FlightStatusInfo({fromBlock: 0}, async function (error, event) {// 20=delayed
-                        if (error) console.log(error);
-                        let airlineAddress = event.returnValues.airline;
-                        let status = event.returnValues.status;
-                        let flight = event.returnValues.flight;
-                        let timestamp = event.returnValues.timestamp;
-                        console.log("after event", config.firstAirline, flight, timestamp, status); 
-                        result2 = await config.flightSuretyApp.getCreditAmount.call(config.owner);
-                        console.log(result2);
-                        amountPaid = await config.If flight is delayed due to airline fault.howMuchPaid.call(user, config.firstAirline, "First airline", timestamp);
-                    })
-                    .catch(e => {
-                        console.log("FlightStatusInfo", e);
-                    });
+}); 
+*/
+                    /* 
+                   
+                    // emit insuranceBought (uint256 txId, address from, uint256 value, bytes32 flightKey, address airline, string flight, uint256 timestamp, uint256 credited);
+                truffleAssert.eventEmitted(tx, 'insuranceBought', (ev) => {
+                        console.log("amount paid", ev.credited);
+                        amountPaid = ev.credited;
+                });
+                let result2 = await config.flightSuretyApp.getCreditAmount.call(config.owner)
+                .then((res) => {console.log(res);})
+                .catch((e)=> {console.log("error", e);});
+                assert((result1 + amountPaid.mul(15).div(10)) >= result2);
                     */
-
-
-    // ASSERT: VERIFY AMOUNT CREDITED // amountPaid.mul(15).div(10)
-    assert(result1 <= result2, "Passenger did not receive credit of 1.5X the amount they paid");
-  });  
+              
 
 
   it('(Passenger) Passenger can withdraw any funds owed to them as a result of receiving credit for insurance payout', async () => {

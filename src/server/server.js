@@ -3,6 +3,9 @@ import FlightSuretyData from '../../build/contracts/FlightSuretyData.json';
 import Config from './config.json';
 import Web3 from 'web3';
 import express from 'express';
+import { rejects } from 'assert';
+import 'babel-polyfill';
+
 let config = Config['localhost'];
 let web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('http', 'ws')));
 let flightSuretyApp = new web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
@@ -11,74 +14,76 @@ let flightSuretyData = new web3.eth.Contract(FlightSuretyData.abi, config.dataAd
 //import { resolve } from 'web3-core-promievent';
 
 let TEST_ORACLES_COUNT = 20;
+let oracles = [];
+
 //web3.eth.defaultAccount = web3.eth.accounts[0];
 
   //In server.js register 20 oracles
 web3.eth.getAccounts().then (async accounts => {
+  let found = false;
   await flightSuretyData.methods.authorizeCaller(config.appAddress).send({"from": accounts[0]})
     .then (() => {
-      testOracles(accounts);
-    })
-    .catch(e=>{console.log("authorize caller", e);});
-});
+      flightSuretyApp.methods.fundAirline(accounts[0]).send({"from": accounts[0], "value": 10, "gas": 4712388, "gasPrice": 10000000000})
+        .then(() => {
+          testOracles(accounts)
+          .then((oracles)=> {
+                flightSuretyApp.events.OracleRequest({fromBlock: 0}, function (error, event) {
+                console.log("Server received event OracleRequest: ")
+                console.log(error, event);
+                let index = event.returnValues.index;
+                let airline = event.returnValues.airline;
+                let flight = event.returnValues.flight;
+                let timestamp = event.returnValues.timestamp;
+                oracles.foreach (function (record, i) {                // Every one of the 20 oracles will submit the response, only some of them will be successful
+                    console.log("Oracle submitting response ");
+                    //if having a matching index Oracles fetch data and submit a response
+                      console.log("Oracle was successful", index, i);
+                      for(let idx=0;idx<3 && found==false;idx++) {
+                      // let oracleIndexes = await config.flightSuretyApp.getMyIndexes.call({from: accounts[a]});
+                        flightSuretyApp.methods.submitOracleResponse(record[idx], airline, flight, timestamp, 20).send({"from": accounts[i]})
+                        .then (() => {found = true;})
+                        .catch(e=> {console.log("error", e);});
+                      }
+                });
+          
+              });
+        
+          })
+          .catch(e=>{console.log("return from testOracle", e);});
+        })      //console.log(a, accounts[a], fee);
+        .catch(e=>{console.log("oracle", e);});
+      })
+      .catch(e=>{console.log("authorize caller", e);});
+  }).catch((e)=> {console.log("Promise rejected. Connection not open ");});
+
 
 function testOracles(accounts) {
-  for(let a=1; a<=TEST_ORACLES_COUNT; a++) {
-    // Register 20 oracles
-    flightSuretyApp.methods.REGISTRATION_FEE().call().then((fee) => {
-      //promise
-      flightSuretyApp.methods.registerOracle().send({"from": accounts[a], "value": fee, "gas": 4712388, "gasPrice": 100000000000})
-        .then(() => {    
-        })
-        .catch(e => {
-          console.log ("register", e);
-        });
-    })
-    .catch (e => {
-      console.log ("fee", e);
-    });
-  }
-  flightSuretyApp.events.OracleRequest({fromBlock: 0, toBlock: 'latest'}, function (error, event) {
-    console.log("Server received event OracleRequest: ", error, event);
-    let index = event.returnValues.index;
-    let airline = event.returnValues.airline;
-    let flight = event.returnValues.flight;
-    let timestamp = event.returnValues.timestamp;
-    for(let a=1; a<TEST_ORACLES_COUNT; a++) {
-      // Every one of the 20 oracles will submit the response, only some of them will be successful
-        console.log("Oracle submitting response ");
-        //if having a matching index Oracles fetch data and submit a response
-        config.flightSuretyApp.submitOracleResponse.send (index,  airline,  flight,  timestamp,  20).send({"from": accounts[a]})
-        .then(result => {
-          console.log("Oracle was successful");
-        })
-        .catch(error => {
-          console.log("Oracle was unlucky");
-        });
-    }
-    flightSuretyApp.events.OracleRequest({fromBlock: 0, toBlock: 'latest'}, function (error, event) {
-      console.log("Server received event OracleRequest: ", error, event);
-      let index = event.returnValues.index;
-      let airline = event.returnValues.airline;
-      let flight = event.returnValues.flight;
-      let timestamp = event.returnValues.timestamp;
-      for(let a=1; a<TEST_ORACLES_COUNT; a++) {
-        // Every one of the 20 oracles will submit the response, only some of them will be successful
-          console.log("Oracle submitting response ");
-          //if having a matching index Oracles fetch data and submit a response
-          config.flightSuretyApp.submitOracleResponse.send (index,  airline,  flight,  timestamp,  20).send({"from": accounts[a]})
-          .then(result => {
-            console.log("Oracle was successful");
+  return new Promise((resolve, reject) => {
+  flightSuretyApp.methods.REGISTRATION_FEE().call({"from": accounts[0]})
+    .then((fee) => {
+    for(let a=1; a<=TEST_ORACLES_COUNT; a++) {
+      // Register 20 oracles
+        flightSuretyApp.methods.registerOracle().send({"from": accounts[a], "value": fee, "gas": 4712388, "gasPrice": 10000000000})
+          .then(() => {  
+            flightSuretyApp.methods.getMyIndexes().call({"from": accounts[a]})
+              .then(result => {  
+                oracles.push(result);
+                console.log(a,result)
+                resolve(oracles);
+              })
+              .catch(e => {"getMyIndexes",reject(e);});
           })
-          .catch(error => {
-            console.log("Oracle was unlucky");
+          .catch(e => {
+            console.log ("register", e);
           });
-      }
-
-    });
-
-  });
-}      //console.log(a, accounts[a], fee);
+        }
+      })
+      .catch (e => {
+        console.log ("fee", e);
+      });
+  });  
+}
+  
   
        /* flightSuretyApp.methods.getMyIndexes().call({
             "from": accounts[a]

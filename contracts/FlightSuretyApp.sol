@@ -226,8 +226,9 @@ contract FlightSuretyApp {
                     external
                     payable
     {
-        //require (msg.value >= 10 ether, "Not enough funds @FlightSuretyApp");
-        flightSuretyData.fund.value(msg.value)(airlineAddress);
+        require (msg.value >= 10 , "Not enough funds @FlightSuretyApp");
+        flightSuretyData.fund.value(msg.value)(airlineAddress, msg.value);
+        //flightSuretyData.transfer.value(msg.value)(airlineAddress);
     }
 
     // Register an oracle with the contract
@@ -366,6 +367,7 @@ contract FlightSuretyApp {
                             payable
                             requireIsOperational
     {
+        require (msg.value <= 1 ether, "Requires to pay up to 1 eth");
         flightSuretyData.buy.value(msg.value)(airline, flight, timestamp, msg.sender);
     }
 
@@ -377,9 +379,10 @@ contract FlightSuretyApp {
     function safeWithdraw
     (
         uint256 amount
-    ) external
+    ) external payable
+        returns (bool)
     {
-        flightSuretyData.safeWithdraw(amount, msg.sender);
+        flightSuretyData.safeWithdraw.value(msg.value)(amount, msg.sender);
     }
 
 }
@@ -390,8 +393,8 @@ contract FlightSuretyData {
     function buy (address airline, string flight, uint256 timestamp , address from) external payable; 
     function registerAirline(address addr, string airline, address registeringAirline) external returns(bool success);
     function creditInsurees ( bytes32 keyFlight ) external;
-    function fund(address airlineAddress)  external  payable;
+    function fund(address airlineAddress, uint256 value)  external  payable;
     function getFlightData (address airline) external returns (uint256 timestamp);
     function getCreditAmount (address passenger) external view returns (uint256 amount);
-    function safeWithdraw ( uint256 amount, address sender ) external;
+    function safeWithdraw ( uint256 amount, address sender ) external payable returns (bool);
 }

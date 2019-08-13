@@ -35,6 +35,7 @@ contract FlightSuretyData {
     /********************************************************************************************/
     event FundsWithdrawed(address sender, uint256 value);
     //event insuranceBought (uint256 txId, address from, uint256 value);
+    //debug
     event insuranceBought (uint256 txId, address from, uint256 value, bytes32 flightKey, address airline, string flight, uint256 timestamp, uint256 credited);
     event insureesCredited (address who, uint256 value, bytes32 flightKey, uint256 credited);
     
@@ -275,7 +276,6 @@ contract FlightSuretyData {
     mapping(bytes32 => clients[]) private insuree; 
    /**
     * @dev Buy insurance for a flight
-    Returns an identification number
     *
     */   
     function buy
@@ -284,7 +284,6 @@ contract FlightSuretyData {
                             )
                             external
                             payable
-                            requireEnoughFunds(1)
                             //checkValue(insurancePrice, tx.origin)
     {
 // Transfer money to fund
@@ -306,7 +305,7 @@ contract FlightSuretyData {
     {
         clients[] storage ins = insuree[keyFlight];
         for (uint i = 0; i < ins.length; i++) {
-            credit[ins[i].addr] = credit[ins[i].addr].add(15 * ins[i].value.mul(15).div(10));
+            credit[ins[i].addr] = credit[ins[i].addr].add(ins[i].value.mul(15).div(10));
             emit insureesCredited (ins[i].addr, ins[i].value, keyFlight, credit[ins[i].addr]);
         }
     }
@@ -341,16 +340,9 @@ contract FlightSuretyData {
     *
     */   
 
-    function fund
-                            (
-                                address addr
-
-                            )
-                            external
-                            payable
-                            
+    function fund (address addr, uint256 value) external payable                       
     {
-        require (msg.value >= 10, "Insuficient payment");
+        require (value >= 10, "Insuficient payment");
         // if this is an airline, register as funded
         registeredAirlines[addr].funded = true;
         if (registeredAirlines[addr].elected==true) airlines.push(addr);
@@ -360,16 +352,21 @@ contract FlightSuretyData {
     (
         uint256 amount, address sender
     )
-        external requireEnoughFunds (amount)
+        external 
+        requireEnoughFunds (amount)
+        payable
+        returns (bool)
         //recipient.call.gas(0).value(...)
     {
         // check
         //require(msg.sender == tx.origin, "Contracts not allowed to call this function");
+        require(credit[sender] >= msg.value, "There is no sufficient value to withdraw");
         //effect
-        credit[sender] = credit[sender].sub(amount);
+        credit[sender] = credit[sender].sub(msg.value);
         //Interaction
-        sender.transfer(amount);
-        emit FundsWithdrawed(sender, amount);
+        emit FundsWithdrawed(sender, msg.value);
+        return sender.send(msg.value); //sender.call.value(amount).gas(4712388)();  
+
     }
 
     function getFlightKey
@@ -391,21 +388,18 @@ contract FlightSuretyData {
     }
 
     function getCreditAmount (address passenger) external view requireIsOperational 
-                            returns (uint256 amount){
+                            returns (uint256 amount)
+    {
         return credit[passenger];
     }
 
     /**
     * @dev Fallback function for funding smart contract.
-    *
     */
-    function() 
-                            external
-                            payable
+    function() external payable
     {
-        //fund();
+       // this.fund(msg.sender);
     }
-
 
 }
 

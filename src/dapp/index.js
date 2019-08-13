@@ -19,20 +19,25 @@ import './flightsurety.css';
         // Read transaction
         contract.isOperational((error, result) => {
             console.log(error,result);
-            display('Operational Status', 'Check if contract is operational', [ { label: 'Operational Status', error: error, value: result} ]);
+            //display('Operational Status', 'Check if contract is operational', [ { label: 'Operational Status', error: error, value: result} ]);
+            if (result) 
+                DOM.elid("contract-operational").value = "operational";
+            else
+                DOM.elid("contract-operational").value = "not operational";
 
             contract.flights.forEach(flight => {
-                displayList(flight, DOM.flightSelector)
+                displayList(flight, document.getElementById("flight-number").parentNode)
             });    
-        });
+        });           
         
         //fund airline
         DOM.elid('fund-airline').addEventListener('click', async (e) => {
             let flight = DOM.elid('flight-number').value;
+            let value = DOM.elid("valueStep").value;
             e.preventDefault(); // OK
             // Write transaction
-            await contract.fetchFlightStatus(flight, (error, result)  => {
-                DOM.elid("flight-status").value = result.flight;
+            await contract.fundAirline(flight, value, (error, result)  => {
+                display('Airline is funded', 'Success!', [ { value: result.airline} ]);
             });
         })
 
@@ -42,28 +47,36 @@ import './flightsurety.css';
             e.preventDefault(); // OK
             // Write transaction
             await contract.fetchFlightStatus(flight, (error, result)  => {
-                DOM.elid("flight-status").value = result.flight;
+                DOM.elid("flight-status").value = "timestamp " + result.timestamp;
+                display('Oracles', 'Trigger oracles', [{
+                    label: 'Fetch Flight Status',
+                    error: error,
+                    value: result.timestamp
+                }]);
             });
         })
 
-        DOM.elid('pay-insurance').addEventListener('click', () => {
+        DOM.elid('pay-insurance').addEventListener('click', (e) => {
             let flight = DOM.elid('flight-number').value;
+            let value = DOM.elid("valueStep").value;
             e.preventDefault(); // OK
 
             // Write transaction
-            contract.buyInsurance(flight, (error, result) => {
-                display('Insurance paid', 'Success!', [ { label: 'Your Insurance number is ', error: error, value: result.flight + ' ' + result.timestamp} ]);
+            contract.buyInsurance(flight, value, (error) => {
+                DOM.elid("text-output").value = error;
             });
         })
 
-        DOM.elid('claim-insurance').addEventListener('click', () => {
-            let value = DOM.querySelector("#valueStep").value;
-
-            // Write transaction
-            contract.safeWithdraw(value, (error, result) => {
-                display('Credit withdrawn', 'Success!');
-            });
-        })
+        //only makes sense after the flight is delayed!
+        // DOM.elid('claim-insurance').addEventListener('click', () => {
+        //     let value = DOM.elid("valueStep").value;
+        //     console.log("Value to withdraw", value);
+            
+        //     // Write transaction
+        //      contract.safeWithdraw(value, (error, result) => {
+        //          display('Credit withdrawn', 'Success!', [ { label: 'Your Withdrawal was sucessful ', error: error, value: result} ]);
+        //      });
+        // })
 
       
     });
@@ -72,26 +85,28 @@ import './flightsurety.css';
 })();
 
 function displayList(flight, parentEl) {
-    console.log(flight);
-    console.log(parentEl);
     let el = document.createElement("option");
     el.text = `${flight.flight} - ${new Date((flight.timestamp))}`;
     el.value = JSON.stringify(flight);
-    parentEl.add(el);
+    console.log(el.value);
+    //parentEl.appendChild(el);
 }
 
 function display(title, description, results) {
-    let displayDiv = DOM.elid("display-wrapper");
-    let section = DOM.section();
-    section.appendChild(DOM.h2(title));
-    section.appendChild(DOM.h5(description));
-    results.map((result) => {
-        let row = section.appendChild(DOM.div({className:'row'}));
-        row.appendChild(DOM.div({className: 'col-sm-4 field'}, result.label));
-        row.appendChild(DOM.div({className: 'col-sm-8 field-value'}, result.error ? String(result.error) : String(result.value)));
-        section.appendChild(row);
-    })
-    displayDiv.append(section);
+    // let displayDiv = DOM.elid("display-wrapper");
+    // let section = DOM.section();
+    // section.appendChild(DOM.h2(title));
+    // section.appendChild(DOM.h5(description));
+    // results.map((result) => {
+    //     let row = section.appendChild(DOM.div({className:'row'}));
+    //     row.appendChild(DOM.div({className: 'col-sm-4 field'}, result.label));
+    //     row.appendChild(DOM.div({className: 'col-sm-8 field-value'}, result.error ? String(result.error) : String(result.value)));
+    //     section.appendChild(row);
+    // })
+    // displayDiv.append(section);
+    console.log(results);
+    DOM.elid("text-output").value = title + "  " + description + "  " + results[0].value;
+
 
 }
 

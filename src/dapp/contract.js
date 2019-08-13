@@ -9,8 +9,8 @@ export default class Contract {
     constructor(network, callback) {
 
         config = Config[network];
-        this.web3 = new Web3(new Web3.providers.HttpProvider(config.url));
-        //this.web3 = new Web3(new Web3.providers.WebsocketProvider(config.url));
+        //this.web3 = new Web3(new Web3.providers.HttpProvider(config.url));
+        this.web3 = new Web3(new Web3.providers.WebsocketProvider(config.url));
 
         this.flightSuretyApp = new this.web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
         this.flightSuretyData = new this.web3.eth.Contract(FlightSuretyData.abi, config.dataAddress);
@@ -71,34 +71,69 @@ export default class Contract {
         } 
         self.flightSuretyApp.methods
             .fetchFlightStatus(payload.airline, payload.flight, payload.timestamp)
-            .send({ from: self.owner}, (error, result) => {
-                callback(error, payload);//result
+            .call({ from: self.owner}, async (error, result) => {
+                console.log(result, error);
+                callback(error ? error.message : `flight ${payload.flight} timestamp ${payload.timestamp}`, payload);
             });
     }
 
-    buyInsurance(flight, callback) {
+    buyInsurance(flight, value, callback) {
         let self = this;
         let payload = {
             airline: self.airlines[0],
             flight: flight,
             timestamp: Math.floor(Date.now() / 1000)
         } 
+        let ethValue = Web3.utils.toWei(value, "ether");
+        console.log(Web3.utils.toWei(value, "ether"), self.owner);
         self.flightSuretyApp.methods
             .buyInsurance(payload.airline, payload.flight, payload.timestamp)
-            .call({ from: self.owner, val: web3.toWei(1, "ether") }, (error, result) => {
-                callback(error, payload);//result undefined
+            .send({ from: self.owner, value: ethValue , gas: 4712388, gasPrice: 10000000}, (error, result) => {
+                console.log(error, result);
+                callback(error ? error.message : `Insurance bought, paid ${value.toString()} ether`);
             });
     }
+
+    fundAirline(flight, value, callback) {
+        let self = this;
+        let payload = {
+            airline: self.airlines[0]
+        } 
+        let ethValue = self.web3.utils.toWei(value, "ether").toString();
+        console.log(ethValue, payload.airline);
+        self.flightSuretyApp.methods
+            .fundAirline(payload.airline)
+            .send({ from: self.owner, value: ethValue , gas: 4712388, gasPrice: 1000000}, (error, result) => {
+                callback(error ? error.message : `User ${self.owner} paid ${ethValue}`, payload);//result undefined
+            });
+    }
+
+    async getCreditAmount(callback) {
+        let self = this;
+        let payload = {
+            passenger: self.owner
+        } 
+        
+        console.log("Passenger", payload.passenger);
+        let value = await self.flightSuretyApp.methods.getCreditAmount(payload.passenger).call({ from: payload.passenger, gas: 4712388, gasPrice: 1000000}, (error, result) => {
+                //callback(error ? error.message : `User ${self.owner} result ${result.value}`, payload);
+            });
+        console.log("value ",value);
+        callback(value, payload);
+    }
+
 
     safeWithdraw(amount, callback) {
         let self = this;
         let payload = {
-            airline: amount
+            amount: Web3.utils.toWei(amount, "ether")
         } 
+        
+        console.log("Amount", payload.amount,this.passengers[0]);
         self.flightSuretyApp.methods
             .safeWithdraw(payload.amount)
-            .call({ from: self.owner}, (error, result) => {
-                callback(error, payload);//result undefined
+            .send({ from: self.owner, value: payload.amount, gas: 4712388, gasPrice: 1000000}, (error, result) => {
+                callback(error ? error.message : `User ${self.owner} result ${result}`, payload);
             });
     }
 }

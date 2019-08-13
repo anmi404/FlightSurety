@@ -257,7 +257,10 @@ it('(airline) Only existing airline may register a new airline until there are a
             await config.flightSuretyApp.buyInsurance.sendTransaction (config.firstAirline, "First airline", timestamp.toNumber(), {"from":config.owner, "value": 100000000})
             .then(function () {
                 //insuranceBought (uint256 txId, address from, uint256 value);
-
+                // truffleAssert.eventEmitted(tx, 'insuranceBought', (ev) => {
+                //     console.log(ev);
+                //     return true;
+                // });
                 //config.flightSuretyData.events.insuranceBought({fromBlock: "latest"}, function (error, event) {
                 //    console.log("Server received event OracleRequest: ", event);
                 //    txId = event.returnValues.txId;
@@ -266,13 +269,17 @@ it('(airline) Only existing airline may register a new airline until there are a
                 //});
             })
             .catch(e => {
+                console.log("errors", e);
+
                 failed = true;
-                //console.log("errors", e);
             });
+        })
+        .catch(e => {
+            console.log("error at ", e);
         });
     }
     catch(e) {
-        console.log(e);
+        console.log("error in ", e);
     }
 
     // ASSERT

@@ -83,6 +83,8 @@ truffle migrate --reset --network develop
 truffle test test/flightSurety.js
 truffle test test/oracle.js
 ```
+Tests are based on https://kalis.me/check-events-solidity-smart-contract-test-truffle/
+
 ## Libraries
 No external libraries have been used. Frameworks version:
 - Truffle v5.0.2 (core: 5.0.2)

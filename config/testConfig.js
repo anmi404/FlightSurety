@@ -41,7 +41,6 @@ var Config = async function(accounts) {
 
     //var eth = BigNumber(10e+18).toString(16);
 
-
     return {
         owner: owner,
         firstAirline: firstAirline,
